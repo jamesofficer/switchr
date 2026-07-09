@@ -16,11 +16,15 @@ final class HotKeyCenter {
     private var hotKeyRef: EventHotKeyRef?
     private var eventHandlerRef: EventHandlerRef?
     private var handler: (() -> Void)?
+    private var keyCode: UInt32 = 0
+    private var modifiers: UInt32 = 0
 
     private init() {}
 
     func register(keyCode: UInt32, modifiers: UInt32, handler: @escaping () -> Void) {
-        unregister()
+        pause()
+        self.keyCode = keyCode
+        self.modifiers = modifiers
         self.handler = handler
 
         if eventHandlerRef == nil {
@@ -37,7 +41,24 @@ final class HotKeyCenter {
                 &eventHandlerRef
             )
         }
+        registerHotKey()
+    }
 
+    /// Temporarily releases the hotkey so its combo reaches the app normally
+    /// (used while recording a new shortcut).
+    func pause() {
+        if let hotKeyRef {
+            UnregisterEventHotKey(hotKeyRef)
+            self.hotKeyRef = nil
+        }
+    }
+
+    func resume() {
+        guard hotKeyRef == nil, handler != nil else { return }
+        registerHotKey()
+    }
+
+    private func registerHotKey() {
         let hotKeyID = EventHotKeyID(signature: OSType(0x5357_4348), id: 1) // 'SWCH'
         RegisterEventHotKey(
             keyCode,
@@ -47,14 +68,6 @@ final class HotKeyCenter {
             0,
             &hotKeyRef
         )
-    }
-
-    func unregister() {
-        if let hotKeyRef {
-            UnregisterEventHotKey(hotKeyRef)
-            self.hotKeyRef = nil
-        }
-        handler = nil
     }
 
     fileprivate func fire() {

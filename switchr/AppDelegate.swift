@@ -11,10 +11,22 @@ final class AppDelegate: NSObject, NSApplicationDelegate {
 
     func applicationDidFinishLaunching(_ notification: Notification) {
         promptForAccessibilityIfNeeded()
+        registerLeaderKey()
 
+        NotificationCenter.default.addObserver(
+            forName: .leaderKeyChanged, object: nil, queue: .main
+        ) { [weak self] _ in
+            MainActor.assumeIsolated {
+                self?.registerLeaderKey()
+            }
+        }
+    }
+
+    func registerLeaderKey() {
+        let key = LeaderKey.current
         HotKeyCenter.shared.register(
-            keyCode: UInt32(kVK_Space),
-            modifiers: UInt32(optionKey)
+            keyCode: key.keyCode,
+            modifiers: key.carbonModifiers
         ) { [weak self] in
             self?.switcher.toggle()
         }
