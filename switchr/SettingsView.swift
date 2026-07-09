@@ -37,10 +37,13 @@ struct SettingsView: View {
                 HStack {
                     Text(isRecording ? "Press shortcut…" : leaderKey.displayString)
                         .font(.system(.body, design: .monospaced).weight(.medium))
-                        .foregroundStyle(isRecording ? .secondary : .primary)
+                        .foregroundStyle(isRecording ? AnyShapeStyle(.secondary) : AnyShapeStyle(.white))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
-                        .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                        .background(
+                            isRecording ? AnyShapeStyle(.quaternary) : AnyShapeStyle(Color.black.opacity(0.78)),
+                            in: RoundedRectangle(cornerRadius: 6)
+                        )
                     Spacer()
                     Button(isRecording ? "Cancel" : "Record Shortcut") {
                         isRecording ? stopRecording() : startRecording()
@@ -99,6 +102,7 @@ struct SettingsView: View {
             }
         }
         .formStyle(.grouped)
+        .background(OverlayScrollerStyle())
         .frame(width: 560, height: 540)
         .onDisappear { stopRecording() }
         .sheet(item: $pendingApp) { app in
@@ -166,6 +170,25 @@ struct SettingsView: View {
         NotificationCenter.default.post(name: .leaderKeyChanged, object: nil)
         return nil
     }
+}
+
+/// Forces the enclosing scroll view to thin overlay scrollers. With "Show
+/// scroll bars: Always" in System Settings, macOS otherwise uses the wide
+/// legacy scroller that reserves its own gutter.
+private struct OverlayScrollerStyle: NSViewRepresentable {
+    func makeNSView(context: Context) -> NSView {
+        let view = NSView()
+        DispatchQueue.main.async {
+            var ancestor = view.superview
+            while let current = ancestor, !(current is NSScrollView) {
+                ancestor = current.superview
+            }
+            (ancestor as? NSScrollView)?.scrollerStyle = .overlay
+        }
+        return view
+    }
+
+    func updateNSView(_ nsView: NSView, context: Context) {}
 }
 
 struct PendingApp: Identifiable {
