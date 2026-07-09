@@ -2,31 +2,22 @@
 //  switchrApp.swift
 //  switchr
 //
-//  Created by James Officer on 9/7/2026.
-//
 
 import SwiftUI
-import SwiftData
 
 @main
 struct switchrApp: App {
-    var sharedModelContainer: ModelContainer = {
-        let schema = Schema([
-            Item.self,
-        ])
-        let modelConfiguration = ModelConfiguration(schema: schema, isStoredInMemoryOnly: false)
-
-        do {
-            return try ModelContainer(for: schema, configurations: [modelConfiguration])
-        } catch {
-            fatalError("Could not create ModelContainer: \(error)")
-        }
-    }()
+    @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        WindowGroup {
-            ContentView()
+        MenuBarExtra("switchr", systemImage: "rectangle.stack") {
+            Button("Show Switcher  ⌥Space") {
+                appDelegate.switcher.toggle()
+            }
+            Divider()
+            Button("Quit switchr") {
+                NSApp.terminate(nil)
+            }
         }
-        .modelContainer(sharedModelContainer)
     }
 }
