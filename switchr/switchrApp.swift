@@ -32,10 +32,19 @@ private struct MenuContent: View {
         }
         Divider()
         Button("Settings…") {
-            // An accessory app isn't active, so the window would open behind
-            // the frontmost app without this.
+            // An accessory app isn't active when the menu item fires, and the
+            // menu is still tearing down, so opening the window in the same
+            // runloop pass loses the activation race and the window stays
+            // behind the frontmost app. Activate, open on the next pass, and
+            // force the window to key.
             NSApp.activate()
-            openSettings()
+            DispatchQueue.main.async {
+                openSettings()
+                NSApp.activate()
+                NSApp.windows
+                    .first { $0.identifier?.rawValue.hasPrefix("com_apple_SwiftUI_Settings") == true }?
+                    .makeKeyAndOrderFront(nil)
+            }
         }
         Divider()
         Button("Quit Switchr") {
