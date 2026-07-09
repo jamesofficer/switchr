@@ -81,7 +81,7 @@ struct SwitcherView: View {
         VStack(alignment: .leading, spacing: 8) {
             Label("Accessibility permission needed", systemImage: "lock.shield")
                 .font(.headline)
-            Text("switchr needs Accessibility access to list and focus windows.")
+            Text("Switchr needs Accessibility access to list and focus windows.")
                 .font(.callout)
                 .foregroundStyle(.secondary)
             Button("Open System Settings") {

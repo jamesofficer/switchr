@@ -10,7 +10,7 @@ struct switchrApp: App {
     @NSApplicationDelegateAdaptor(AppDelegate.self) private var appDelegate
 
     var body: some Scene {
-        MenuBarExtra("switchr", systemImage: "rectangle.stack") {
+        MenuBarExtra("Switchr", systemImage: "rectangle.stack") {
             MenuContent(switcher: appDelegate.switcher)
         }
 
@@ -38,7 +38,7 @@ private struct MenuContent: View {
             openSettings()
         }
         Divider()
-        Button("Quit switchr") {
+        Button("Quit Switchr") {
             NSApp.terminate(nil)
         }
     }
