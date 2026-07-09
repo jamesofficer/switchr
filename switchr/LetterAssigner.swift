@@ -27,18 +27,23 @@ final class LetterAssigner {
     }
 
     func assign(to windows: [WindowInfo]) -> [SwitcherRow] {
-        var taken = Set<Character>()
+        let customBindings = CustomBindingsStore.shared
+        // Custom letters are reserved up front, even for apps that aren't
+        // running, so automatic assignment can never steal them.
+        var taken = customBindings.reservedLetters
         var map = persisted
 
-        // First pass: primary window per app claims its persisted letter, in
-        // list order, so conflicts between stale assignments resolve the same
-        // way every time.
+        // First pass: custom bindings win, then the primary window per app
+        // claims its persisted letter, in list order, so conflicts between
+        // stale assignments resolve the same way every time.
         var primaryLetters: [String: Character] = [:]
         var seenApps = Set<String>()
         for window in windows {
             guard let bundleID = window.app.bundleIdentifier, !seenApps.contains(bundleID) else { continue }
             seenApps.insert(bundleID)
-            if let stored = map[bundleID]?.first, !taken.contains(stored) {
+            if let custom = customBindings.letter(for: bundleID) {
+                primaryLetters[bundleID] = custom
+            } else if let stored = map[bundleID]?.first, !taken.contains(stored) {
                 primaryLetters[bundleID] = stored
                 taken.insert(stored)
             }
