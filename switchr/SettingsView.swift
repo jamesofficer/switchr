@@ -10,12 +10,14 @@ import UniformTypeIdentifiers
 
 enum PrefKey {
     static let bringToCurrentScreen = "bringWindowToCurrentScreen"
+    static let maximizeOnFocus = "maximizeWindowWhenFocused"
     static let leaderKeyCode = "leaderKeyCode"
     static let leaderKeyModifiers = "leaderKeyModifiers"
 }
 
 struct SettingsView: View {
     @AppStorage(PrefKey.bringToCurrentScreen) private var bringToCurrentScreen = false
+    @AppStorage(PrefKey.maximizeOnFocus) private var maximizeOnFocus = false
     @AppStorage(PrefKey.leaderKeyCode) private var leaderKeyCode = Int(LeaderKey.default.keyCode)
     @AppStorage(PrefKey.leaderKeyModifiers) private var leaderModifiers = Int(LeaderKey.default.carbonModifiers)
 
@@ -88,6 +90,10 @@ struct SettingsView: View {
             Section("Behavior") {
                 Toggle("Bring window to current screen", isOn: $bringToCurrentScreen)
                 Text("When enabled, switching moves the window to the screen the switcher is on, keeping its relative position. When off, the window is focused wherever it already is.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Toggle("Maximize window when focused", isOn: $maximizeOnFocus)
+                Text("When enabled, the focused window is resized to fill its screen edge to edge. This is a normal resize, not macOS full screen.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

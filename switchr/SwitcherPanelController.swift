@@ -75,8 +75,9 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         let moveTarget = UserDefaults.standard.bool(forKey: PrefKey.bringToCurrentScreen)
             ? panelScreen
             : nil
+        let maximize = UserDefaults.standard.bool(forKey: PrefKey.maximizeOnFocus)
         hide()
-        WindowManager.focus(row.window, movingTo: moveTarget)
+        WindowManager.focus(row.window, movingTo: moveTarget, maximizing: maximize)
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {

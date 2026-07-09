@@ -53,11 +53,13 @@ enum WindowManager {
         return result
     }
 
-    static func focus(_ window: WindowInfo, movingTo screen: NSScreen? = nil) {
+    static func focus(_ window: WindowInfo, movingTo screen: NSScreen? = nil, maximizing: Bool = false) {
         if window.isMinimized {
             AXUIElementSetAttributeValue(window.axWindow, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
         }
-        if let screen {
+        if maximizing {
+            maximize(window, on: screen)
+        } else if let screen {
             move(window, to: screen)
         }
         AXUIElementPerformAction(window.axWindow, kAXRaiseAction as CFString)
@@ -68,6 +70,29 @@ enum WindowManager {
         let axApp = AXUIElementCreateApplication(window.app.processIdentifier)
         AXUIElementSetAttributeValue(axApp, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
         window.app.activate()
+    }
+
+    /// Resizes a window to fill the visible frame (edge to edge, below the
+    /// menu bar and above the Dock) of the given screen, or of the screen the
+    /// window is currently on. This is a plain resize, not macOS full screen.
+    private static func maximize(_ window: WindowInfo, on screen: NSScreen?) {
+        guard let frame = axFrame(of: window.axWindow) else { return }
+        let targetScreen = screen
+            ?? NSScreen.screens.first { axRect(from: $0.visibleFrame).contains(CGPoint(x: frame.midX, y: frame.midY)) }
+            ?? NSScreen.main
+        guard let targetScreen else { return }
+
+        let destination = axRect(from: targetScreen.visibleFrame)
+        guard frame != destination else { return }
+
+        var origin = destination.origin
+        var size = destination.size
+        if let positionValue = AXValueCreate(.cgPoint, &origin) {
+            AXUIElementSetAttributeValue(window.axWindow, kAXPositionAttribute as CFString, positionValue)
+        }
+        if let sizeValue = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(window.axWindow, kAXSizeAttribute as CFString, sizeValue)
+        }
     }
 
     /// Moves a window onto the given screen, preserving its position relative
