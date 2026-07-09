@@ -11,6 +11,7 @@ import SwiftUI
 
 final class SwitcherPanelController: NSObject, NSWindowDelegate {
     private var panel: SwitcherPanel?
+    private var panelScreen: NSScreen?
     private var rows: [SwitcherRow] = []
     private let letterAssigner = LetterAssigner()
 
@@ -58,6 +59,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
             panel.setFrameOrigin(origin)
         }
 
+        panelScreen = NSScreen.main
         self.panel = panel
         panel.makeKeyAndOrderFront(nil)
     }
@@ -65,12 +67,16 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     func hide() {
         panel?.orderOut(nil)
         panel = nil
+        panelScreen = nil
         rows = []
     }
 
     private func select(_ row: SwitcherRow) {
+        let moveTarget = UserDefaults.standard.bool(forKey: PrefKey.bringToCurrentScreen)
+            ? panelScreen
+            : nil
         hide()
-        WindowManager.focus(row.window)
+        WindowManager.focus(row.window, movingTo: moveTarget)
     }
 
     private func handleKey(_ event: NSEvent) -> Bool {

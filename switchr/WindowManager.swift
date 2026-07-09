@@ -53,9 +53,12 @@ enum WindowManager {
         return result
     }
 
-    static func focus(_ window: WindowInfo) {
+    static func focus(_ window: WindowInfo, movingTo screen: NSScreen? = nil) {
         if window.isMinimized {
             AXUIElementSetAttributeValue(window.axWindow, kAXMinimizedAttribute as CFString, kCFBooleanFalse)
+        }
+        if let screen {
+            move(window, to: screen)
         }
         AXUIElementPerformAction(window.axWindow, kAXRaiseAction as CFString)
         AXUIElementSetAttributeValue(window.axWindow, kAXMainAttribute as CFString, kCFBooleanTrue)
@@ -65,6 +68,66 @@ enum WindowManager {
         let axApp = AXUIElementCreateApplication(window.app.processIdentifier)
         AXUIElementSetAttributeValue(axApp, kAXFrontmostAttribute as CFString, kCFBooleanTrue)
         window.app.activate()
+    }
+
+    /// Moves a window onto the given screen, preserving its position relative
+    /// to its current screen's visible area (a window in the top-right corner
+    /// of one monitor lands in the top-right of the target monitor).
+    private static func move(_ window: WindowInfo, to screen: NSScreen) {
+        guard let frame = axFrame(of: window.axWindow) else { return }
+        let destination = axRect(from: screen.visibleFrame)
+        guard !destination.contains(CGPoint(x: frame.midX, y: frame.midY)) else { return }
+
+        let source = NSScreen.screens
+            .map { axRect(from: $0.visibleFrame) }
+            .first { $0.contains(CGPoint(x: frame.midX, y: frame.midY)) }
+            ?? frame
+
+        var size = frame.size
+        size.width = min(size.width, destination.width)
+        size.height = min(size.height, destination.height)
+
+        // Fractional offset within the source screen's free space, clamped.
+        func fraction(_ position: CGFloat, _ min: CGFloat, _ free: CGFloat) -> CGFloat {
+            free > 0 ? Swift.max(0, Swift.min(1, (position - min) / free)) : 0
+        }
+        let fx = fraction(frame.minX, source.minX, source.width - frame.width)
+        let fy = fraction(frame.minY, source.minY, source.height - frame.height)
+        var origin = CGPoint(
+            x: destination.minX + fx * (destination.width - size.width),
+            y: destination.minY + fy * (destination.height - size.height)
+        )
+
+        if let positionValue = AXValueCreate(.cgPoint, &origin) {
+            AXUIElementSetAttributeValue(window.axWindow, kAXPositionAttribute as CFString, positionValue)
+        }
+        if size != frame.size, let sizeValue = AXValueCreate(.cgSize, &size) {
+            AXUIElementSetAttributeValue(window.axWindow, kAXSizeAttribute as CFString, sizeValue)
+        }
+    }
+
+    /// AX uses global coordinates with the origin at the primary screen's
+    /// top-left, y increasing downward; Cocoa's origin is the bottom-left.
+    private static func axRect(from cocoaRect: NSRect) -> CGRect {
+        let primaryHeight = NSScreen.screens.first?.frame.maxY ?? 0
+        return CGRect(
+            x: cocoaRect.minX,
+            y: primaryHeight - cocoaRect.maxY,
+            width: cocoaRect.width,
+            height: cocoaRect.height
+        )
+    }
+
+    private static func axFrame(of element: AXUIElement) -> CGRect? {
+        var positionRef: CFTypeRef?
+        var sizeRef: CFTypeRef?
+        guard AXUIElementCopyAttributeValue(element, kAXPositionAttribute as CFString, &positionRef) == .success,
+              AXUIElementCopyAttributeValue(element, kAXSizeAttribute as CFString, &sizeRef) == .success else { return nil }
+        var position = CGPoint.zero
+        var size = CGSize.zero
+        guard AXValueGetValue(positionRef as! AXValue, .cgPoint, &position),
+              AXValueGetValue(sizeRef as! AXValue, .cgSize, &size) else { return nil }
+        return CGRect(origin: position, size: size)
     }
 
     private static func stringAttribute(_ element: AXUIElement, _ attribute: String) -> String? {
