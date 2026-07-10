@@ -11,6 +11,7 @@ import UniformTypeIdentifiers
 enum PrefKey {
     static let bringToCurrentScreen = "bringWindowToCurrentScreen"
     static let maximizeOnFocus = "maximizeWindowWhenFocused"
+    static let animatePanel = "animateSwitcherAppearance"
     static let leaderKeyCode = "leaderKeyCode"
     static let leaderKeyModifiers = "leaderKeyModifiers"
 }
@@ -18,6 +19,7 @@ enum PrefKey {
 struct SettingsView: View {
     @AppStorage(PrefKey.bringToCurrentScreen) private var bringToCurrentScreen = false
     @AppStorage(PrefKey.maximizeOnFocus) private var maximizeOnFocus = false
+    @AppStorage(PrefKey.animatePanel) private var animatePanel = true
     @AppStorage(PrefKey.leaderKeyCode) private var leaderKeyCode = Int(LeaderKey.default.keyCode)
     @AppStorage(PrefKey.leaderKeyModifiers) private var leaderModifiers = Int(LeaderKey.default.carbonModifiers)
 
@@ -66,8 +68,9 @@ struct SettingsView: View {
                     HStack(spacing: 10) {
                         Text(binding.key.uppercased())
                             .font(.system(.body, design: .monospaced).weight(.bold))
+                            .foregroundStyle(.white)
                             .frame(width: 26, height: 26)
-                            .background(.quaternary, in: RoundedRectangle(cornerRadius: 6))
+                            .background(Color.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 6))
                         Image(nsImage: NSWorkspace.shared.icon(forFile: binding.appPath))
                             .resizable()
                             .frame(width: 22, height: 22)
@@ -97,6 +100,10 @@ struct SettingsView: View {
                     .foregroundStyle(.secondary)
                 Toggle("Maximize window when focused", isOn: $maximizeOnFocus)
                 Text("When enabled, the focused window is resized to fill its screen edge to edge. This is a normal resize, not macOS full screen.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
+                Toggle("Animate switcher appearance", isOn: $animatePanel)
+                Text("Plays a short pop animation when the switcher opens. When off, the panel appears instantly.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }
@@ -172,23 +179,42 @@ struct SettingsView: View {
     }
 }
 
-/// Forces the enclosing scroll view to thin overlay scrollers. With "Show
-/// scroll bars: Always" in System Settings, macOS otherwise uses the wide
-/// legacy scroller that reserves its own gutter.
+/// Forces every scroll view in the window to thin overlay scrollers. With
+/// "Show scroll bars: Always" in System Settings, macOS otherwise uses the
+/// wide legacy scroller that reserves its own gutter. A `.background` view
+/// sits beside the Form rather than inside its scroll view, so this searches
+/// down from the window's content view instead of walking up the hierarchy.
 private struct OverlayScrollerStyle: NSViewRepresentable {
     func makeNSView(context: Context) -> NSView {
-        let view = NSView()
-        DispatchQueue.main.async {
-            var ancestor = view.superview
-            while let current = ancestor, !(current is NSScrollView) {
-                ancestor = current.superview
-            }
-            (ancestor as? NSScrollView)?.scrollerStyle = .overlay
-        }
-        return view
+        ScrollerStyler()
     }
 
-    func updateNSView(_ nsView: NSView, context: Context) {}
+    func updateNSView(_ nsView: NSView, context: Context) {
+        (nsView as? ScrollerStyler)?.applyOverlayStyle()
+    }
+}
+
+private final class ScrollerStyler: NSView {
+    override func viewDidMoveToWindow() {
+        super.viewDidMoveToWindow()
+        applyOverlayStyle()
+        // The Form's scroll view may not exist yet when we land in the window.
+        DispatchQueue.main.async { [weak self] in self?.applyOverlayStyle() }
+    }
+
+    func applyOverlayStyle() {
+        guard let root = window?.contentView else { return }
+        Self.overlayScrollers(in: root)
+    }
+
+    private static func overlayScrollers(in view: NSView) {
+        if let scrollView = view as? NSScrollView {
+            scrollView.scrollerStyle = .overlay
+        }
+        for subview in view.subviews {
+            overlayScrollers(in: subview)
+        }
+    }
 }
 
 struct PendingApp: Identifiable {

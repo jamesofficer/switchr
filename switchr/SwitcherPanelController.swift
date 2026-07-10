@@ -48,6 +48,8 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
+        let animate = UserDefaults.standard.object(forKey: PrefKey.animatePanel) as? Bool ?? true
+        panel.animationBehavior = animate ? .utilityWindow : .none
         panel.delegate = self
         panel.onKeyDown = { [weak self] event in self?.handleKey(event) ?? false }
 
