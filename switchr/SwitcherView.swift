@@ -42,9 +42,9 @@ struct SwitcherView: View {
         HStack(spacing: 10) {
             Text(row.letter.map { String($0).uppercased() } ?? "")
                 .font(.system(.body, design: .monospaced).weight(.bold))
-                .foregroundStyle(.white)
+                .foregroundStyle(.primary)
                 .frame(width: 26, height: 26)
-                .background(Color.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 6))
+                .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
 
             if let icon = row.window.app.icon {
                 Image(nsImage: icon)

@@ -39,13 +39,10 @@ struct SettingsView: View {
                 HStack {
                     Text(isRecording ? "Press shortcut…" : leaderKey.displayString)
                         .font(.system(.body, design: .monospaced).weight(.medium))
-                        .foregroundStyle(isRecording ? AnyShapeStyle(.secondary) : AnyShapeStyle(.white))
+                        .foregroundStyle(isRecording ? AnyShapeStyle(.secondary) : AnyShapeStyle(.primary))
                         .padding(.horizontal, 12)
                         .padding(.vertical, 5)
-                        .background(
-                            isRecording ? AnyShapeStyle(.quaternary) : AnyShapeStyle(Color.black.opacity(0.78)),
-                            in: RoundedRectangle(cornerRadius: 6)
-                        )
+                        .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
                     Spacer()
                     Button(isRecording ? "Cancel" : "Record Shortcut") {
                         isRecording ? stopRecording() : startRecording()
@@ -68,9 +65,9 @@ struct SettingsView: View {
                     HStack(spacing: 10) {
                         Text(binding.key.uppercased())
                             .font(.system(.body, design: .monospaced).weight(.bold))
-                            .foregroundStyle(.white)
+                            .foregroundStyle(.primary)
                             .frame(width: 26, height: 26)
-                            .background(Color.black.opacity(0.78), in: RoundedRectangle(cornerRadius: 6))
+                            .background(Color.black.opacity(0.15), in: RoundedRectangle(cornerRadius: 6))
                         Image(nsImage: NSWorkspace.shared.icon(forFile: binding.appPath))
                             .resizable()
                             .frame(width: 22, height: 22)
