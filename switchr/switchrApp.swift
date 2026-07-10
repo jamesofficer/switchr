@@ -50,13 +50,17 @@ private struct MenuContent: View {
     }
 
     private func presentSettings(retriesLeft: Int) {
-        NSApp.activate()
+        // The plain activate() is a cooperative request that the frontmost
+        // app can (and does) deny, leaving the settings window behind it.
+        // The deprecated forceful variant is the only reliable way for an
+        // accessory app to bring its own window to the front.
+        NSApp.activate(ignoringOtherApps: true)
         openSettings()
         DispatchQueue.main.asyncAfter(deadline: .now() + 0.06) {
             if let window = settingsWindow, window.isVisible {
-                window.orderFrontRegardless()
+                NSApp.activate(ignoringOtherApps: true)
                 window.makeKeyAndOrderFront(nil)
-                NSApp.activate()
+                window.orderFrontRegardless()
             } else if retriesLeft > 0 {
                 presentSettings(retriesLeft: retriesLeft - 1)
             }
