@@ -11,7 +11,7 @@
 
 ---
 
-Switchr lives in your menu bar. Hit the leader key (⌃Space by default) and a Spotlight-style panel lists every open window, each with a letter. Press the letter and you're there — no cycling through ⌘Tab, no hunting through Mission Control.
+Switchr lives in your menu bar. Hit the leader key (⌃Space by default) and a Spotlight-style panel lists every open window, each with a letter. Press the letter and you're there. No cycling through ⌘Tab, no hunting through Mission Control.
 
 ## Screenshots
 
@@ -21,12 +21,12 @@ Switchr lives in your menu bar. Hit the leader key (⌃Space by default) and a S
 
 ## Features
 
-- **Stable letters** — each app keeps the same letter across launches (Safari is always `S`), and extra windows of the same app keep their own letters for as long as they're open, so switching between two browser windows never swaps their keys.
-- **Custom bindings** — pin a specific key to a specific app in Settings; automatic assignment can never steal it.
-- **Configurable leader key** — record any combination that includes ⌃, ⌥ or ⌘.
-- **Bring window to current screen** *(optional)* — on multi-monitor setups, focusing a window can move it to the screen you're looking at, keeping its relative position.
-- **Maximize when focused** *(optional)* — resizes the focused window edge to edge (a normal resize, not macOS full screen).
-- **Fast and unobtrusive** — a non-activating panel, so dismissing it (Esc or the leader key again) drops you right back where you were. Menu bar only, no Dock icon. Minimized windows are restored when selected.
+- **Stable letters.** Each app keeps the same letter across launches (Safari is always `S`), and extra windows of the same app keep their own letters for as long as they're open, so switching between two browser windows never swaps their keys.
+- **Custom bindings.** Pin a specific key to a specific app in Settings; automatic assignment can never steal it.
+- **Configurable leader key.** Record any combination that includes ⌃, ⌥ or ⌘.
+- **Bring window to current screen** *(optional)*. On multi-monitor setups, focusing a window can move it to the screen you're looking at, keeping its relative position.
+- **Maximize when focused** *(optional)*. Resizes the focused window edge to edge (a normal resize, not macOS full screen).
+- **Fast and unobtrusive.** A non-activating panel, so dismissing it (Esc or the leader key again) drops you right back where you were. Menu bar only, no Dock icon. Minimized windows are restored when selected.
 
 ## Installation
 
@@ -40,7 +40,7 @@ cp -R ~/Library/Developer/Xcode/DerivedData/switchr-*/Build/Products/Release/Swi
 open /Applications/Switchr.app
 ```
 
-On first launch, grant **Accessibility** access when prompted (System Settings → Privacy & Security → Accessibility). Switchr needs it to list and focus other apps' windows — that's all it's used for.
+On first launch, grant **Accessibility** access when prompted (System Settings → Privacy & Security → Accessibility). Switchr needs it to list and focus other apps' windows, and that's all it's used for.
 
 ### Requirements
 
