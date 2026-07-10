@@ -99,7 +99,7 @@ struct SettingsView: View {
                 Text("When enabled, the focused window is resized to fill its screen edge to edge. This is a normal resize, not macOS full screen.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
-                Toggle("Animate switcher appearance", isOn: $animatePanel)
+                Toggle("Animate window appearance", isOn: $animatePanel)
                 Text("Plays a short pop animation when the switcher opens. When off, the panel appears instantly.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
