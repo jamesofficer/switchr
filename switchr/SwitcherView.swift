@@ -108,12 +108,15 @@ struct SwitcherView: View {
                 .foregroundStyle(.secondary)
                 .lineLimit(1)
             Spacer(minLength: 8)
+            Image(systemName: "xmark.circle")
+                .foregroundStyle(.tertiary)
+                .help("Not open")
         }
         .padding(.horizontal, 8)
         .padding(.vertical, 3)
         .contentShape(RoundedRectangle(cornerRadius: 8))
         .onTapGesture { onLaunch(binding) }
-        .opacity(0.75)
+        .opacity(0.6)
     }
 
     private var permissionHint: some View {
