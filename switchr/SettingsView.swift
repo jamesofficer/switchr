@@ -5,6 +5,7 @@
 
 import AppKit
 import Carbon.HIToolbox
+import ServiceManagement
 import SwiftUI
 import UniformTypeIdentifiers
 
@@ -25,6 +26,11 @@ struct SettingsView: View {
 
     @State private var isRecording = false
     @State private var keyMonitor: Any?
+
+    // Login-item state lives with the system, not in our defaults: it can be
+    // flipped in System Settings > Login Items too, so read it back rather
+    // than trusting a stored preference.
+    @State private var launchAtLogin = SMAppService.mainApp.status == .enabled
 
     @ObservedObject private var customBindings = CustomBindingsStore.shared
     @State private var pendingApp: PendingApp?
@@ -91,6 +97,13 @@ struct SettingsView: View {
             }
 
             Section("Behavior") {
+                Toggle("Launch at login", isOn: $launchAtLogin)
+                    .onChange(of: launchAtLogin) { _, enabled in
+                        setLaunchAtLogin(enabled)
+                    }
+                Text("Automatically opens Switchr when you log in.")
+                    .font(.callout)
+                    .foregroundStyle(.secondary)
                 Toggle("Bring window to current screen", isOn: $bringToCurrentScreen)
                 Text("When enabled, switching moves the window to the screen the switcher is on, keeping its relative position. When off, the window is focused wherever it already is.")
                     .font(.callout)
@@ -111,6 +124,20 @@ struct SettingsView: View {
         .onDisappear { stopRecording() }
         .sheet(item: $pendingApp) { app in
             BindingKeySheet(app: app)
+        }
+    }
+
+    private func setLaunchAtLogin(_ enabled: Bool) {
+        do {
+            if enabled {
+                try SMAppService.mainApp.register()
+            } else {
+                try SMAppService.mainApp.unregister()
+            }
+        } catch {
+            // Registration failed; snap the toggle back to reality.
+            launchAtLogin = SMAppService.mainApp.status == .enabled
+            NSSound.beep()
         }
     }
 
