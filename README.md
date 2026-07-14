@@ -22,7 +22,7 @@ Switchr lives in your menu bar. Hit the leader key (⌃Space by default) and a S
 ## Features
 
 - **Stable letters.** Each app keeps the same letter across launches (Safari is always `S`), and extra windows of the same app keep their own letters for as long as they're open, so switching between two browser windows never swaps their keys.
-- **Custom bindings.** Pin a specific key to a specific app in Settings; automatic assignment can never steal it.
+- **Custom bindings.** Pin a specific key to a specific app in Settings; automatic assignment can never steal it. If the app isn't open, it's listed at the bottom of the switcher and its key launches it.
 - **Configurable leader key.** Record any combination that includes ⌃, ⌥ or ⌘.
 - **Bring window to current screen** *(optional)*. On multi-monitor setups, focusing a window can move it to the screen you're looking at, keeping its relative position.
 - **Maximize when focused** *(optional)*. Resizes the focused window edge to edge (a normal resize, not macOS full screen).

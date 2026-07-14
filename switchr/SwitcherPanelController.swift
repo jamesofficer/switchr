@@ -13,6 +13,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     private var panel: SwitcherPanel?
     private var panelScreen: NSScreen?
     private var rows: [SwitcherRow] = []
+    private var closedApps: [CustomBinding] = []
     private let letterAssigner = LetterAssigner()
 
     func toggle() {
@@ -24,12 +25,25 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     }
 
     func show() {
-        rows = letterAssigner.assign(to: WindowManager.listWindows())
+        let windows = WindowManager.listWindows()
+        rows = letterAssigner.assign(to: windows)
+
+        // Bound apps with no open windows appear at the bottom; their key
+        // launches (or re-activates) the app instead of focusing a window.
+        let showClosed = UserDefaults.standard.object(forKey: PrefKey.showClosedApps) as? Bool ?? true
+        if showClosed {
+            let openBundleIDs = Set(windows.compactMap { $0.app.bundleIdentifier })
+            closedApps = CustomBindingsStore.shared.bindings.filter { !openBundleIDs.contains($0.bundleID) }
+        } else {
+            closedApps = []
+        }
 
         let view = SwitcherView(
             rows: rows,
+            closedApps: closedApps,
             hasPermission: WindowManager.hasAccessibilityPermission,
-            onSelect: { [weak self] row in self?.select(row) }
+            onSelect: { [weak self] row in self?.select(row) },
+            onLaunch: { [weak self] binding in self?.launch(binding) }
         )
         let hosting = NSHostingView(rootView: view)
         hosting.frame.size = hosting.fittingSize
@@ -71,6 +85,15 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         panel = nil
         panelScreen = nil
         rows = []
+        closedApps = []
+    }
+
+    private func launch(_ binding: CustomBinding) {
+        hide()
+        NSWorkspace.shared.openApplication(
+            at: URL(fileURLWithPath: binding.appPath),
+            configuration: NSWorkspace.OpenConfiguration()
+        )
     }
 
     private func select(_ row: SwitcherRow) {
@@ -88,10 +111,16 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
             return true
         }
         guard !event.modifierFlags.contains(.command),
-              let letter = event.charactersIgnoringModifiers?.lowercased().first,
-              let row = rows.first(where: { $0.letter == letter }) else { return false }
-        select(row)
-        return true
+              let letter = event.charactersIgnoringModifiers?.lowercased().first else { return false }
+        if let row = rows.first(where: { $0.letter == letter }) {
+            select(row)
+            return true
+        }
+        if let binding = closedApps.first(where: { $0.letter == letter }) {
+            launch(binding)
+            return true
+        }
+        return false
     }
 
     func windowDidResignKey(_ notification: Notification) {

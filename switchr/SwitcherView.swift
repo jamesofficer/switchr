@@ -3,18 +3,21 @@
 //  switchr
 //
 
+import AppKit
 import SwiftUI
 
 struct SwitcherView: View {
     let rows: [SwitcherRow]
+    let closedApps: [CustomBinding]
     let hasPermission: Bool
     let onSelect: (SwitcherRow) -> Void
+    let onLaunch: (CustomBinding) -> Void
 
     var body: some View {
         VStack(alignment: .leading, spacing: 2) {
             if !hasPermission {
                 permissionHint
-            } else if rows.isEmpty {
+            } else if rows.isEmpty && closedApps.isEmpty {
                 Text("No windows open")
                     .foregroundStyle(.secondary)
                     .padding(12)
@@ -23,6 +26,16 @@ struct SwitcherView: View {
                     VStack(alignment: .leading, spacing: 2) {
                         ForEach(rows) { row in
                             rowView(row)
+                        }
+                        if !closedApps.isEmpty {
+                            if !rows.isEmpty {
+                                Divider()
+                                    .padding(.horizontal, 8)
+                                    .padding(.vertical, 4)
+                            }
+                            ForEach(closedApps) { binding in
+                                closedAppRow(binding)
+                            }
                         }
                     }
                 }
@@ -76,6 +89,31 @@ struct SwitcherView: View {
         .contentShape(RoundedRectangle(cornerRadius: 8))
         .onTapGesture { onSelect(row) }
         .opacity(row.window.isMinimized ? 0.6 : 1)
+    }
+
+    // Bound apps that aren't open: compact single-line rows so they stay out
+    // of the way. Their key launches the app instead of focusing a window.
+    private func closedAppRow(_ binding: CustomBinding) -> some View {
+        HStack(spacing: 10) {
+            Text(binding.key.uppercased())
+                .font(.system(.callout, design: .monospaced).weight(.bold))
+                .foregroundStyle(.secondary)
+                .frame(width: 26, height: 22)
+                .background(Color.black.opacity(0.1), in: RoundedRectangle(cornerRadius: 6))
+            Image(nsImage: NSWorkspace.shared.icon(forFile: binding.appPath))
+                .resizable()
+                .frame(width: 18, height: 18)
+            Text(binding.appName)
+                .font(.callout)
+                .foregroundStyle(.secondary)
+                .lineLimit(1)
+            Spacer(minLength: 8)
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3)
+        .contentShape(RoundedRectangle(cornerRadius: 8))
+        .onTapGesture { onLaunch(binding) }
+        .opacity(0.75)
     }
 
     private var permissionHint: some View {
