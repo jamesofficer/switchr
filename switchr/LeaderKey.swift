@@ -28,6 +28,15 @@ struct LeaderKey {
         )
     }
 
+    var cocoaModifiers: NSEvent.ModifierFlags {
+        var flags: NSEvent.ModifierFlags = []
+        if carbonModifiers & UInt32(controlKey) != 0 { flags.insert(.control) }
+        if carbonModifiers & UInt32(optionKey) != 0 { flags.insert(.option) }
+        if carbonModifiers & UInt32(shiftKey) != 0 { flags.insert(.shift) }
+        if carbonModifiers & UInt32(cmdKey) != 0 { flags.insert(.command) }
+        return flags
+    }
+
     static func carbonModifiers(from flags: NSEvent.ModifierFlags) -> UInt32 {
         var result: UInt32 = 0
         if flags.contains(.control) { result |= UInt32(controlKey) }

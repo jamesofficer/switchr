@@ -53,6 +53,7 @@ On first launch, grant **Accessibility** access when prompted (System Settings �
 | --- | --- |
 | Open the switcher | ⌃Space (configurable) |
 | Focus a window | its letter |
+| Flick between windows | keep ⌃ held, tap letters, release to finish |
 | Dismiss | Esc, or ⌃Space again |
 
 Settings are in the menu bar icon → **Settings…**, covering the leader key, per-app bindings, and the behavior toggles above.

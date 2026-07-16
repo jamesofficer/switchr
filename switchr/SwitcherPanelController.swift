@@ -13,6 +13,9 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     private var panel: SwitcherPanel?
     private var panelScreen: NSScreen?
     private var revealWork: DispatchWorkItem?
+    // True once a window was selected with the leader modifiers still held:
+    // the panel stays up so further letters keep switching, until release.
+    private var isFlicking = false
     private var rows: [SwitcherRow] = []
     private var closedApps: [CustomBinding] = []
     private let letterAssigner = LetterAssigner()
@@ -66,6 +69,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         panel.animationBehavior = .none
         panel.delegate = self
         panel.onKeyDown = { [weak self] event in self?.handleKey(event) ?? false }
+        panel.onFlagsChanged = { [weak self] event in self?.handleFlags(event) }
 
         if let screen = NSScreen.main {
             let origin = NSPoint(
@@ -105,6 +109,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     func hide() {
         revealWork?.cancel()
         revealWork = nil
+        isFlicking = false
         panel?.orderOut(nil)
         panel = nil
         panelScreen = nil
@@ -121,11 +126,32 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     }
 
     private func select(_ row: SwitcherRow) {
+        hide()
+        focus(row)
+    }
+
+    /// Switch focus but keep the session alive: the target app takes key
+    /// status when it activates, so reclaim it for the panel (nonactivating
+    /// panels may hold key while another app stays active) unless the leader
+    /// modifiers were released in the gap.
+    private func flick(to row: SwitcherRow) {
+        isFlicking = true
+        focus(row)
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.05) { [weak self] in
+            guard let self, let panel = self.panel else { return }
+            if NSEvent.modifierFlags.contains(LeaderKey.current.cocoaModifiers) {
+                panel.makeKey()
+            } else {
+                self.hide()
+            }
+        }
+    }
+
+    private func focus(_ row: SwitcherRow) {
         let moveTarget = UserDefaults.standard.bool(forKey: PrefKey.bringToCurrentScreen)
             ? panelScreen
             : nil
         let maximize = UserDefaults.standard.bool(forKey: PrefKey.maximizeOnFocus)
-        hide()
         WindowManager.focus(row.window, movingTo: moveTarget, maximizing: maximize)
     }
 
@@ -134,10 +160,15 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
             hide()
             return true
         }
-        guard !event.modifierFlags.contains(.command),
-              let letter = event.charactersIgnoringModifiers?.lowercased().first else { return false }
+        guard let letter = event.charactersIgnoringModifiers?.lowercased().first else { return false }
+        // Letters pressed with the leader modifiers still held flick between
+        // windows without closing; a plain letter selects and closes.
+        let leaderFlags = LeaderKey.current.cocoaModifiers
+        let holdingLeader = !leaderFlags.isEmpty && event.modifierFlags.contains(leaderFlags)
+        guard holdingLeader || !event.modifierFlags.contains(.command) else { return false }
+
         if let row = rows.first(where: { $0.letter == letter }) {
-            select(row)
+            holdingLeader ? flick(to: row) : select(row)
             return true
         }
         if let binding = closedApps.first(where: { $0.letter == letter }) {
@@ -147,13 +178,26 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         return false
     }
 
+    private func handleFlags(_ event: NSEvent) {
+        guard isFlicking,
+              !event.modifierFlags.contains(LeaderKey.current.cocoaModifiers) else { return }
+        hide()
+    }
+
     func windowDidResignKey(_ notification: Notification) {
+        // During a flick the focused app steals key; take it back rather than
+        // closing, as long as the leader modifiers are still held.
+        if isFlicking, panel != nil, NSEvent.modifierFlags.contains(LeaderKey.current.cocoaModifiers) {
+            DispatchQueue.main.async { [weak self] in self?.panel?.makeKey() }
+            return
+        }
         hide()
     }
 }
 
 final class SwitcherPanel: NSPanel {
     var onKeyDown: ((NSEvent) -> Bool)?
+    var onFlagsChanged: ((NSEvent) -> Void)?
 
     // A borderless panel refuses key status unless we say otherwise.
     override var canBecomeKey: Bool { true }
@@ -162,5 +206,10 @@ final class SwitcherPanel: NSPanel {
         if onKeyDown?(event) != true {
             super.keyDown(with: event)
         }
+    }
+
+    override func flagsChanged(with event: NSEvent) {
+        onFlagsChanged?(event)
+        super.flagsChanged(with: event)
     }
 }
