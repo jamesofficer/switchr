@@ -119,7 +119,7 @@ struct SettingsView: View {
                     .font(.callout)
                     .foregroundStyle(.secondary)
                 Toggle("Animate window appearance", isOn: $animatePanel)
-                Text("Plays a short pop animation when the switcher opens. When off, the panel appears instantly.")
+                Text("Fades the switcher in when it appears. When off, it appears instantly.")
                     .font(.callout)
                     .foregroundStyle(.secondary)
             }

@@ -26,7 +26,7 @@ Switchr lives in your menu bar. Hit the leader key (⌃Space by default) and a S
 - **Configurable leader key.** Record any combination that includes ⌃, ⌥ or ⌘.
 - **Bring window to current screen** *(optional)*. On multi-monitor setups, focusing a window can move it to the screen you're looking at, keeping its relative position.
 - **Maximize when focused** *(optional)*. Resizes the focused window edge to edge (a normal resize, not macOS full screen).
-- **Fast and unobtrusive.** A non-activating panel, so dismissing it (Esc or the leader key again) drops you right back where you were. Menu bar only, no Dock icon. Minimized windows are restored when selected.
+- **Fast and unobtrusive.** Type the letter right after the leader key and the switch happens without the panel ever appearing; it only shows if you hesitate. A non-activating panel, so dismissing it (Esc or the leader key again) drops you right back where you were. Menu bar only, no Dock icon. Minimized windows are restored when selected.
 
 ## Installation
 

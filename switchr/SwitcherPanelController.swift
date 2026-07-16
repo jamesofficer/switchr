@@ -12,6 +12,7 @@ import SwiftUI
 final class SwitcherPanelController: NSObject, NSWindowDelegate {
     private var panel: SwitcherPanel?
     private var panelScreen: NSScreen?
+    private var revealWork: DispatchWorkItem?
     private var rows: [SwitcherRow] = []
     private var closedApps: [CustomBinding] = []
     private let letterAssigner = LetterAssigner()
@@ -62,8 +63,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         panel.collectionBehavior = [.canJoinAllSpaces, .fullScreenAuxiliary]
         panel.isReleasedWhenClosed = false
         panel.hidesOnDeactivate = false
-        let animate = UserDefaults.standard.object(forKey: PrefKey.animatePanel) as? Bool ?? true
-        panel.animationBehavior = animate ? .utilityWindow : .none
+        panel.animationBehavior = .none
         panel.delegate = self
         panel.onKeyDown = { [weak self] event in self?.handleKey(event) ?? false }
 
@@ -77,10 +77,34 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
 
         panelScreen = NSScreen.main
         self.panel = panel
+
+        // Grace period: the panel takes key immediately so letters land right
+        // away, but stays invisible for a beat. A fast leader+letter chord
+        // switches without the panel ever appearing; it only shows on
+        // hesitation.
+        panel.alphaValue = 0
         panel.makeKeyAndOrderFront(nil)
+        let work = DispatchWorkItem { [weak self] in self?.reveal() }
+        revealWork = work
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.2, execute: work)
+    }
+
+    private func reveal() {
+        guard let panel else { return }
+        let animate = UserDefaults.standard.object(forKey: PrefKey.animatePanel) as? Bool ?? true
+        if animate {
+            NSAnimationContext.runAnimationGroup { context in
+                context.duration = 0.12
+                panel.animator().alphaValue = 1
+            }
+        } else {
+            panel.alphaValue = 1
+        }
     }
 
     func hide() {
+        revealWork?.cancel()
+        revealWork = nil
         panel?.orderOut(nil)
         panel = nil
         panelScreen = nil
