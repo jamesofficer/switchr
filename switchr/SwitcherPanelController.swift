@@ -16,6 +16,9 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     // True once a window was selected with the leader modifiers still held:
     // the panel stays up so further letters keep switching, until release.
     private var isFlicking = false
+    // The reveal delay elapsed while the leader modifiers were still held;
+    // show the panel when they're released instead.
+    private var revealPending = false
     private var rows: [SwitcherRow] = []
     private var closedApps: [CustomBinding] = []
     private let letterAssigner = LetterAssigner()
@@ -95,6 +98,13 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
 
     private func reveal() {
         guard let panel else { return }
+        // While the leader modifiers are held down the user is flicking, not
+        // browsing: stay hidden and reveal on release instead.
+        if NSEvent.modifierFlags.contains(LeaderKey.current.cocoaModifiers) {
+            revealPending = true
+            return
+        }
+        revealPending = false
         let animate = UserDefaults.standard.object(forKey: PrefKey.animatePanel) as? Bool ?? true
         if animate {
             NSAnimationContext.runAnimationGroup { context in
@@ -110,6 +120,7 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
         revealWork?.cancel()
         revealWork = nil
         isFlicking = false
+        revealPending = false
         panel?.orderOut(nil)
         panel = nil
         panelScreen = nil
@@ -179,9 +190,12 @@ final class SwitcherPanelController: NSObject, NSWindowDelegate {
     }
 
     private func handleFlags(_ event: NSEvent) {
-        guard isFlicking,
-              !event.modifierFlags.contains(LeaderKey.current.cocoaModifiers) else { return }
-        hide()
+        guard !event.modifierFlags.contains(LeaderKey.current.cocoaModifiers) else { return }
+        if isFlicking {
+            hide()
+        } else if revealPending {
+            reveal()
+        }
     }
 
     func windowDidResignKey(_ notification: Notification) {
