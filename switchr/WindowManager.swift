@@ -83,16 +83,35 @@ enum WindowManager {
         guard let targetScreen else { return }
 
         let destination = axRect(from: targetScreen.visibleFrame)
-        guard frame != destination else { return }
+        guard !roughlyEqual(frame, destination) else { return }
 
-        var origin = destination.origin
-        var size = destination.size
+        // When the window is crossing screens, apps clamp the size request to
+        // the screen the window is still on, so one position+size pass lands
+        // the move but keeps the old screen's size. Reapply until the frame
+        // settles (or the app refuses, e.g. a window with a maximum size).
+        for _ in 0..<3 {
+            setFrame(window.axWindow, destination)
+            guard let current = axFrame(of: window.axWindow),
+                  !roughlyEqual(current, destination) else { return }
+        }
+    }
+
+    private static func setFrame(_ element: AXUIElement, _ rect: CGRect) {
+        var origin = rect.origin
+        var size = rect.size
         if let positionValue = AXValueCreate(.cgPoint, &origin) {
-            AXUIElementSetAttributeValue(window.axWindow, kAXPositionAttribute as CFString, positionValue)
+            AXUIElementSetAttributeValue(element, kAXPositionAttribute as CFString, positionValue)
         }
         if let sizeValue = AXValueCreate(.cgSize, &size) {
-            AXUIElementSetAttributeValue(window.axWindow, kAXSizeAttribute as CFString, sizeValue)
+            AXUIElementSetAttributeValue(element, kAXSizeAttribute as CFString, sizeValue)
         }
+    }
+
+    /// Apps report frames with sub-point offsets; treat anything within a
+    /// point as arrived so the reapply loop doesn't fight over rounding.
+    private static func roughlyEqual(_ a: CGRect, _ b: CGRect) -> Bool {
+        abs(a.minX - b.minX) < 1 && abs(a.minY - b.minY) < 1
+            && abs(a.width - b.width) < 1 && abs(a.height - b.height) < 1
     }
 
     /// Moves a window onto the given screen, preserving its position relative
